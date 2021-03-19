@@ -1,0 +1,651 @@
+##########################################################################################################################################################################
+# Luis Trevino                                                                                                                                                            #
+# Professor Matthew Martinez                                                                                                                                              #
+# R - Programming Web Scrapping Project                                                                                                                                   #
+# March 15, 2021                                                                                                                                                          #
+##########################################################################################################################################################################
+
+
+
+#Bring In Libraries
+
+library(rvest)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(pacman)
+
+#############################   ROTTEN TOMATOES   ###############################
+
+
+#Website to Scrape for WORST MOVIES----
+URL_worst <- html("https://editorial.rottentomatoes.com/guide/worst-movies-of-all-time/")
+
+# Attributes as Lists ----
+listWT <- list(URL_worst%>%
+                 html_nodes(".article_movie_title a") %>%
+                 html_text())
+listWY <- list(URL_worst%>%
+                 html_nodes(".start-year") %>%
+                 html_text())
+listWS <- list(URL_worst%>%
+                 html_nodes(".tMeterScore") %>%
+                 html_text())
+listWD <- list(URL_worst%>%
+                 html_nodes(".director a:nth-child(2)") %>%
+                 html_text())
+listWA1 <- list(URL_worst%>%
+                  html_nodes(".cast a:nth-child(2)") %>%
+                  html_text())
+listWA2 <- list(URL_worst%>%
+                  html_nodes(".cast a:nth-child(3)") %>%
+                  html_text())
+listWA3 <- list(URL_worst%>%
+                  html_nodes(".cast a:nth-child(4)") %>%
+                  html_text())
+listWA4 <- list(URL_worst%>%
+                  html_nodes(".cast a:nth-child(5)") %>%
+                  html_text())
+
+#Dataframe of all Lists - WORST MOVIES ----
+df_wrt <- do.call(rbind, Map(data.frame, Title=listWT, Year=listWY, Score=listWS, Director=listWD, Actor1=listWA1, Actor2=listWA2, Actor3=listWA3, Actor4=listWA4))
+
+
+
+#Website to Scrape for BEST MOVIES----
+URL_best <- html("https://editorial.rottentomatoes.com/guide/100-club-certified-fresh-movies/")
+
+# Lists of Attributes----
+listBT <- list(URL_best%>%
+                 html_nodes(".article_movie_title a") %>%
+                 html_text())
+listBY <- list(URL_best%>%
+                 html_nodes(".start-year") %>%
+                 html_text())
+listBS <- list(URL_best%>%
+                 html_nodes(".tMeterScore") %>%
+                 html_text())
+listBD <- list(URL_best%>%
+                 html_nodes(".director a:nth-child(2)") %>%
+                 html_text())
+listBA1 <- list(URL_best%>%
+                  html_nodes(".cast a:nth-child(2)") %>%
+                  html_text())
+listBA2 <- list(URL_best%>%
+                  html_nodes(".cast a:nth-child(3)") %>%
+                  html_text())
+listBA3 <- list(URL_best%>%
+                  html_nodes(".cast a:nth-child(4)") %>%
+                  html_text())
+listBA4 <- list(URL_best%>%
+                  html_nodes(".cast a:nth-child(5)") %>%
+                  html_text())
+
+#NOTE: Number of elements between lists differ
+lengths(listBT)
+lengths(listBA1)
+#Therefore edits are made in order to be able to combine lists in Data Frame:
+
+#1 Turned original lists into data frames
+df_BT <- do.call(rbind, Map(data.frame, Titles=listBT))
+df_BY <- do.call(rbind, Map(data.frame, Year=listBY))
+df_BS <- do.call(rbind, Map(data.frame, Score=listBS))
+df_BD <- do.call(rbind, Map(data.frame, Director=listBD))
+
+#2 Reordered rows in data frames
+df_BT <- df_BT$Titles[c(1:15, 17:23, 25:69, 16, 24, 70)]
+df_BY <- df_BY$Year[c(1:15, 17:23, 25:69, 16, 24, 70)]
+df_BS <- df_BS$Score[c(1:15, 17:23, 25:69, 16, 24, 70)]
+df_BD <- df_BD$Director[c(1:15, 17:23, 25:69, 16, 24, 70)]
+
+#Converted data frameS back into listS
+listBT_new <- list(df_BT)
+listBY_new <- list(df_BY)
+listBS_new <- list(df_BS)
+listBD_new <- list(df_BD)
+
+#New data frame with new (ordered) lists
+
+df_bstA <- do.call(rbind, Map(data.frame, Title=listBT_new, Year=listBY_new, Score=listBS_new, Director=listBD_new))
+
+# Data frame of Actor Lists
+
+df_bstB <- do.call(rbind, Map(data.frame, Actor1=listBA1, Actor2=listBA2, Actor3=listBA3, Actor4=listBA4))
+
+# Merged and final Data Frame for BEST MOVIES----
+
+df_bst <- merge(data.frame(df_bstA, row.names=NULL), data.frame(df_bstB, row.names=NULL), 
+                by = 0, all = TRUE)[-1]
+
+####################################################################################################
+
+####################################################################################################
+
+##################################   IMDB   ################################## 
+
+#Websites to scrape - WORST MOVIES
+
+URL_bottom <- html("https://www.imdb.com/search/title/?groups=bottom_250&lists=!watchlist&sort=user_rating,asc")
+URL_bottom151 <- html("https://www.imdb.com/search/title/?groups=bottom_250&sort=user_rating,asc&start=151&ref_=adv_nxt")
+
+
+
+#Attributes as Lists----
+#Movie Titles
+
+list01M <- list(URL_bottom%>%
+                  html_nodes(".lister-item-header a") %>%
+                  html_text())
+
+list04M <- list(URL_bottom151%>%
+                  html_nodes(".lister-item-header a") %>%
+                  html_text())
+
+
+#Year
+list01Y <- list(URL_bottom%>%
+                  html_nodes(".text-muted.unbold") %>%
+                  html_text())
+
+list04Y <- list(URL_bottom151%>%
+                  html_nodes(".text-muted.unbold") %>%
+                  html_text())
+
+#Critic Score
+
+list01S <- list(URL_bottom%>%
+                  html_nodes(".ratings-imdb-rating strong") %>%
+                  html_text())
+list04S <- list(URL_bottom151%>%
+                  html_nodes(".ratings-imdb-rating strong") %>%
+                  html_text())
+
+#Runtime
+list01R <- list(URL_bottom%>%
+                  html_nodes(".runtime") %>%
+                  html_text())
+
+list04R <- list(URL_bottom151%>%
+                  html_nodes(".runtime") %>%
+                  html_text())
+
+#Votes
+list01V <- list(URL_bottom%>%
+                  html_nodes(".sort-num_votes-visible span:nth-child(2)") %>%
+                  html_text())
+
+list04V <- list(URL_bottom151%>%
+                  html_nodes(".sort-num_votes-visible span:nth-child(2)") %>%
+                  html_text())
+
+#Director
+list01D <- list(URL_bottom%>%
+                  html_nodes("p:nth-child(5) a:nth-child(1)") %>%
+                  html_text())
+
+list04D <- list(URL_bottom151%>%
+                  html_nodes("p:nth-child(5) a:nth-child(1)") %>%
+                  html_text())
+
+
+########### Vector Cleaning ########## ----
+
+#Vector Assignments
+
+#Genre
+G <- URL_bottom%>%
+  html_nodes(".genre") %>%
+  html_text()
+
+G_4 <- URL_bottom151%>%
+  html_nodes(".genre") %>%
+  html_text()
+
+#Trim function which uses regular expressions to clean white space
+trim <- function( x ) {
+  gsub("(^[[:space:]]+|[[:space:]]+$)", "", x)
+}
+
+
+G1 <- trim(G)
+G4 <- trim(G_4)
+
+Actors 
+#Main 1
+AM1 <- URL_bottom%>%
+  html_nodes(":nth-child(48) a:nth-child(4) , :nth-child(34) a:nth-child(4), :nth-child(33) a:nth-child(4), :nth-child(23) a:nth-child(4), 
+             :nth-child(21) a:nth-child(4), #main :nth-child(10) a:nth-child(4), #main :nth-child(5) .lister-item-content a:nth-child(4), 
+             :nth-child(50) a:nth-child(4), .lister-item-content a:nth-child(3)") %>%
+  html_text()
+
+AM1D <- URL_bottom151%>%
+  html_nodes(":nth-child(48) a:nth-child(4) , :nth-child(34) a:nth-child(4), :nth-child(33) a:nth-child(4), :nth-child(23) a:nth-child(4), 
+             :nth-child(21) a:nth-child(4), #main :nth-child(10) a:nth-child(4), #main :nth-child(5) .lister-item-content a:nth-child(4), 
+             :nth-child(50) a:nth-child(4), .lister-item-content a:nth-child(3)") %>%
+  html_text()
+
+#Main2
+AM2 <- URL_bottom%>%
+  html_nodes("a:nth-child(4)") %>%
+  html_text()
+
+
+AM2D <- URL_bottom151%>%
+  html_nodes("a:nth-child(4)") %>%
+  html_text()
+
+#Main3
+AM3 <- URL_bottom%>%
+  html_nodes(".lister-item-content a:nth-child(5)") %>%
+  html_text()
+
+AM3D <- URL_bottom151%>%
+  html_nodes(".lister-item-content a:nth-child(5)") %>%
+  html_text()
+
+#Main4
+AM4 <- URL_bottom%>%
+  html_nodes("a:nth-child(6)") %>%
+  html_text()
+
+AM4D <- URL_bottom151%>%
+  html_nodes("a:nth-child(6)") %>%
+  html_text()
+
+
+####################################################################################################################################
+
+
+
+#Vector Cleaning
+AM11 <- AM1[AM1 %in% "3" == FALSE]
+AM111 <- AM11[AM11 %in% "4" == FALSE]
+
+AM22 <- AM2[AM2 %in% "4" == FALSE]
+AM222 <- AM22[AM22 %in% "Most Popular Movies" == FALSE]
+AM2222 <- AM222[AM222 %in% "Most Popular Shows" == FALSE]
+AM22222 <- AM2222[AM2222 %in% "IMDb Originals" == FALSE]
+AM222222 <- AM22222[AM22222 %in% "Golden Globes" == FALSE]
+AM2222222 <- AM222222[AM222222 %in% "Celebrity News" == FALSE]
+AM22222222 <- AM2222222[AM2222222 %in% "Celebs" == FALSE] #EIGHT 2's
+
+AM33 <- AM3[AM3 %in% "5" == FALSE]
+
+AM44 <- AM4[AM4 %in% "6" == FALSE]
+AM444 <- AM44[AM44 %in% "Top Box Office" == FALSE]
+AM4444 <- AM444[AM444 %in% "TV News" == FALSE]
+AM44444 <- AM4444[AM4444 %in% "IMDb Podcasts" == FALSE]
+AM444444 <- AM44444[AM44444 %in% "Women's History Month" == FALSE]
+AM4444444 <- AM444444[AM444444 %in% "Keywords" == FALSE] #SIX 4's
+
+
+AM11D <- AM1[AM1 %in% "3" == FALSE]
+AM111D <- AM11[AM11 %in% "4" == FALSE]
+
+AM22D <- AM2D[AM2D %in% "4" == FALSE]
+AM222D <- AM22D[AM22D %in% "Most Popular Movies" == FALSE]
+AM2222D <- AM222D[AM222D %in% "Most Popular Shows" == FALSE]
+AM22222D <- AM2222D[AM2222D %in% "IMDb Originals" == FALSE]
+AM222222D <- AM22222D[AM22222D %in% "Golden Globes" == FALSE]
+AM2222222D <- AM222222D[AM222222D %in% "Celebrity News" == FALSE]
+AM22222222D <- AM2222222D[AM2222222D %in% "Celebs" == FALSE] #EIGHT 2's
+
+AM33D <- AM3D[AM3D %in% "5" == FALSE]
+
+AM44D <- AM4D[AM4D %in% "6" == FALSE]
+AM444D <- AM44D[AM44D %in% "Top Box Office" == FALSE]
+AM4444D <- AM444D[AM444D %in% "TV News" == FALSE]
+AM44444D <- AM4444D[AM4444D %in% "IMDb Podcasts" == FALSE]
+AM444444D <- AM44444D[AM44444D %in% "Women's History Month" == FALSE]
+AM4444444D <- AM444444D[AM444444D %in% "Keywords" == FALSE] #SIX 4's
+
+# Vectors into Lists
+list01G <- list(G1)
+list01AM1 <- list(AM111) 
+list01AM2 <- list(AM22222222)
+list01AM3 <- list(AM33) 
+list01AM4 <- list(AM4444444) 
+
+list04G <- list(G4)
+list04AM1 <- list(AM111D) 
+list04AM2 <- list(AM22222222D)
+list04AM3 <- list(AM33D) 
+list04AM4 <- list(AM4444444D) 
+
+# Data Frame for WORST MOVIES IMDB
+
+df_bottom <- do.call(rbind, Map(data.frame, Title=list01M, Year=list01Y, Score=list01S, Director=list01D, Actor1=list01AM1, Actor2=list01AM2, Actor3=list01AM3, 
+                                Actor4=list01AM4, Runtime=list01R, Genre=list01G, Votes=list01V))
+
+
+df_bottom151 <- do.call(rbind, Map(data.frame, Title=list04M, Year=list04Y, Score=list04S, Director=list04D, Actor1=list04AM1, Actor2=list04AM2, Actor3=list04AM3, 
+                                   Actor4=list04AM4,  Runtime=list04R, Genre=list04G, Votes=list04V))
+
+
+# Final Merged Data Frame for WORST MOVIES
+
+df_wrt_imbd <- rbind(df_bottom, df_bottom151)
+
+#Websites to scrape - BEST MOVIES ----
+
+URL_top <- html("https://www.imdb.com/search/title/?groups=top_250&sort=user_rating")
+URL_top2 <- html("https://www.imdb.com/search/title/?groups=top_250&sort=user_rating,desc&start=101&ref_=adv_nxt")
+
+
+#Attributes as Lists----
+#Movie Titles
+
+
+list02M <- list(URL_top%>%
+                  html_nodes(".lister-item-header a") %>%
+                  html_text())
+
+list03M <- list(URL_top2%>%
+                  html_nodes(".lister-item-header a") %>%
+                  html_text())
+
+
+#Year
+list02Y <- list(URL_top%>%
+                  html_nodes(".text-muted.unbold") %>%
+                  html_text())
+
+list03Y <- list(URL_top2%>%
+                  html_nodes(".text-muted.unbold") %>%
+                  html_text())
+
+
+
+#Critic Score
+
+list02S <- list(URL_top%>%
+                  html_nodes(".ratings-imdb-rating strong") %>%
+                  html_text())
+
+list03S <- list(URL_top2%>%
+                  html_nodes(".ratings-imdb-rating strong") %>%
+                  html_text())
+
+
+
+#Runtime
+list02R <- list(URL_top%>%
+                  html_nodes(".runtime") %>%
+                  html_text())
+
+list03R <- list(URL_top2%>%
+                  html_nodes(".runtime") %>%
+                  html_text())
+
+
+#Votes
+list02V <- list(URL_top%>%
+                  html_nodes(".sort-num_votes-visible span:nth-child(2)") %>%
+                  html_text())
+
+list03V <- list(URL_top2%>%
+                  html_nodes(".sort-num_votes-visible span:nth-child(2)") %>%
+                  html_text())
+
+#Director
+list02D <- list(URL_top%>%
+                  html_nodes("p:nth-child(5) a:nth-child(1)") %>%
+                  html_text())
+list03D <- list(URL_top2%>%
+                  html_nodes("p:nth-child(5) a:nth-child(1)") %>%
+                  html_text())
+
+
+
+
+
+########### Vector Cleaning ########## ----
+
+#Vector Assignments
+
+#Genre
+H <- URL_top%>%
+  html_nodes(".genre") %>%
+  html_text()
+
+H_2 <- URL_top2%>%
+  html_nodes(".genre") %>%
+  html_text()
+
+
+
+H1 <- trim(H)
+H2 <- trim(H_2)
+
+
+
+Actors 
+#Main 1
+AM1X <- URL_top%>%
+  html_nodes(":nth-child(48) a:nth-child(4) , :nth-child(34) a:nth-child(4), :nth-child(33) a:nth-child(4), :nth-child(23) a:nth-child(4), 
+             :nth-child(21) a:nth-child(4), #main :nth-child(10) a:nth-child(4), #main :nth-child(5) .lister-item-content a:nth-child(4), 
+             :nth-child(50) a:nth-child(4), .lister-item-content a:nth-child(3)") %>%
+  html_text()
+
+AM1Y <- URL_top2%>%
+  html_nodes(":nth-child(48) a:nth-child(4) , :nth-child(34) a:nth-child(4), :nth-child(33) a:nth-child(4), :nth-child(23) a:nth-child(4), 
+             :nth-child(21) a:nth-child(4), #main :nth-child(10) a:nth-child(4), #main :nth-child(5) .lister-item-content a:nth-child(4), 
+             :nth-child(50) a:nth-child(4), .lister-item-content a:nth-child(3)") %>%
+  html_text()
+
+
+
+
+
+#Main2
+AM2X <- URL_top%>%
+  html_nodes("a:nth-child(4)") %>%
+  html_text()
+
+AM2Y <- URL_top2%>%
+  html_nodes("a:nth-child(4)") %>%
+  html_text()
+
+
+#Main3
+AM3X <- URL_top%>%
+  html_nodes(".lister-item-content a:nth-child(5)") %>%
+  html_text()
+
+AM3Y <- URL_top2%>%
+  html_nodes(".lister-item-content a:nth-child(5)") %>%
+  html_text()
+
+
+
+
+#Main4
+AM4X <- URL_top%>%
+  html_nodes("a:nth-child(6)") %>%
+  html_text()
+
+AM4Y <- URL_top2%>%
+  html_nodes("a:nth-child(6)") %>%
+  html_text()
+
+# vec_new <- vec[! vec %in% c("A", "C")]        # Remove multiple values
+#vec_new <- AM1X[! AM1X %in% c("4", "3","Lee J. Cobb", "Ingrid Bergman", "Charles Bronson")]
+
+#Vector Cleaning
+AM11X <- AM1X[AM1X %in% "3" == FALSE]
+AM111X <- AM11X[AM11X %in% "4" == FALSE]
+AM1111X <- AM111X[AM111X %in% "Lee J. Cobb" == FALSE]
+AM11111X <- AM1111X[AM1111X %in% "Ingrid Bergman" == FALSE]
+AM111111X <- AM11111X[AM11111X %in% "Charles Bronson" == FALSE]
+
+AMXX <- list(AM111111X[-11])
+
+AM22X <- AM2X[AM2X %in% "4" == FALSE]
+AM222X <- AM22X[AM22X %in% "Most Popular Movies" == FALSE]
+AM2222X <- AM222X[AM222X %in% "Most Popular Shows" == FALSE]
+AM22222X <- AM2222X[AM2222X %in% "IMDb Originals" == FALSE]
+AM222222X <- AM22222X[AM22222X %in% "Golden Globes" == FALSE]
+AM2222222X <- AM222222X[AM222222X %in% "Celebrity News" == FALSE]
+AM22222222X <- AM2222222X[AM2222222X %in% "Celebs" == FALSE] #EIGHT 2's
+
+AM33X <- AM3X[AM3X %in% "5" == FALSE]
+
+AM44X <- AM4X[AM4X %in% "6" == FALSE]
+AM444X <- AM44X[AM44X %in% "Top Box Office" == FALSE]
+AM4444X <- AM444X[AM444X %in% "TV News" == FALSE]
+AM44444X <- AM4444X[AM4444X %in% "IMDb Podcasts" == FALSE]
+AM444444X <- AM44444X[AM44444X %in% "Women's History Month" == FALSE]
+AM4444444X <- AM444444X[AM444444X %in% "Keywords" == FALSE] #SIX 4's
+
+
+
+AM11Y <- AM1Y[AM1Y %in% "3" == FALSE]
+AM111Y <- AM11Y[AM11Y %in% "4" == FALSE]
+
+
+
+AM1111Y <- AM111Y[AM111Y %in% "Mone Kamishiraishi" == FALSE]
+AM11111Y <- AM1111Y[AM1111Y %in% "4" == FALSE]
+AM111111Y <- AM11111Y[AM11111Y %in% "4" == FALSE]
+
+
+
+
+AM22Y <- AM2Y[AM2Y %in% "4" == FALSE]
+AM222Y <- AM22Y[AM22Y %in% "Most Popular Movies" == FALSE]
+AM2222Y <- AM222Y[AM222Y %in% "Most Popular Shows" == FALSE]
+AM22222Y <- AM2222Y[AM2222Y %in% "IMDb Originals" == FALSE]
+AM222222Y <- AM22222Y[AM22222Y %in% "Golden Globes" == FALSE]
+AM2222222Y <- AM222222Y[AM222222Y %in% "Celebrity News" == FALSE]
+AM22222222Y <- AM2222222Y[AM2222222Y %in% "Celebs" == FALSE] #EIGHT 2's
+
+AM33Y <- AM3Y[AM3Y %in% "5" == FALSE]
+
+AM44Y <- AM4Y[AM4Y %in% "6" == FALSE]
+AM444Y <- AM44Y[AM44Y %in% "Top Box Office" == FALSE]
+AM4444Y <- AM444Y[AM444Y %in% "TV News" == FALSE]
+AM44444Y <- AM4444Y[AM4444Y %in% "IMDb Podcasts" == FALSE]
+AM444444Y <- AM44444Y[AM44444Y %in% "Women's History Month" == FALSE]
+AM4444444Y <- AM444444Y[AM444444Y %in% "Keywords" == FALSE] #SIX 4's
+
+
+
+
+
+
+# Vectors into Lists
+list01H <- list(H1)
+
+AMXX
+list02AM2 <- list(AM22222222X)
+list02AM3 <- list(AM33X) 
+list02AM4 <- list(AM4444444X) 
+
+
+
+# Data Frame for BEST MOVIES IMDB
+
+df_top <- do.call(rbind, Map(data.frame, Title=list02M, Year=list02Y, Score=list02S, Director=list02D, Actor1=AMXX, Actor2=list02AM2, Actor3=list02AM3, 
+                                Actor4=list02AM4, Runtime=list02R, Genre=list01H, Votes=list02V))
+
+
+
+
+
+
+df_top151 <- do.call(rbind, Map(data.frame, Title=list04M, Year=list04Y, Score=list04S, Director=list04D, Actor1=list04AM1, Actor2=list04AM2, Actor3=list04AM3, 
+                                   Actor4=list04AM4,  Runtime=list04R, Genre=list04G, Votes=list04V))
+
+
+# Final Merged Data Frame for BEST MOVIES
+
+df_bst_imbd <- rbind(df_top, df_top151)
+
+
+############################################################Summary of Obtained Data Frames#######################################################----
+
+# Data Frames of Best Rated Movies Ever
+
+df_bst  #70 Movies from Rotten Tomatoes
+df_bst_imbd #100 Movies from IMDB
+
+
+# Data Frames of Worst Rated Movies Ever
+
+df_wrt #100 Movies from Rotten Tomatoes
+df_wrt_imbd  #100 Movies from IMDB
+
+
+#########################################################################################################################################################
+
+# Plots/Visuals from Data Frames
+# Variables Used : Runtime, Score, Votes
+
+#Variable Names
+names(df_wrt_imbd)
+
+run_vec <-  df_wrt_imbd$Runtime
+votes_vec <- df_wrt_imbd$Votes
+
+
+#Pattern to remove selected phrases
+df_wrt_imbd$Runtime <- as.numeric(gsub("min", "",run_vec))
+df_wrt_imbd$Votes <- as.numeric(gsub(",","",votes_vec))
+
+
+df_wrt_imbd$Year <- as.numeric(gsub( "(", "", year_vec))
+
+# Column conversion from character to numeric
+df_wrt_imbd$Runtime <- as.numeric(df_wrt_imbd$Runtime)
+df_wrt_imbd$Score <- as.numeric(df_wrt_imbd$Score)
+
+# Table
+
+YEARS <- table(df_wrt_imbd$Year)
+barplot(YEARS)
+
+
+
+
+
+
+JJ <- df_wrt_imbd$Year
+
+typeof(JJ)
+
+JJJJ <- gsub("()","", JJJ)
+
+?gsub
+
+
+summary(df_wrt_imbd$Votes)
+
+typeof(df_wrt_imbd$Year)
+
+
+
+#Table and summaries (view)
+table(df_wrt_imbd$Year)
+summary(df_wrt_imbd$Runtime)
+
+#Graphs
+#BoxPlot
+boxplot(df_wrt_imbd$Runtime, main = "title", ylab = "Minutes")
+
+#Histogram
+hist(df_wrt_imbd$Runtime)
+
+#Barplot
+RUNTIME <- table(df_wrt_imbd$Runtime)
+barplot(RUNTIME)
+
+#ScatterPlot
+plot(df_wrt_imbd$Runtime)
+plot(RUNTIME)
+
+
+
+#Tables
+testing <- table(df_wrt_imbd$Actor1)
+barplot(testing)
+
